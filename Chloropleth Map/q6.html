@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.counties {
+}
+
+.states {
+  stroke: #fff;
+  stroke-linejoin_data: round;
+}
+
+legend{
+  font: sans-serif;
+}
+body {
+  font-family: 'Proxima Nova', sans-serif;
+  font-size: 12px;
+}
+h1{
+  font-size: 3em;
+  font-weight: 700;
+  color: purple;
+  text-align: center;
+}
+
+.d3-tip {
+  line-height: 1;
+  padding: 12px;
+  background: rgba(43,43,43, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+</style>
+
+<h1>Education Statistics</h1>
+<svg width="960" height="600"></svg>
+<script src="../lib/d3.v3.min.js"></script>
+<script src="../lib/topojson.v1.min.js"></script>
+<script src="../lib/d3.tip.v0.6.3.js"></script>
+<script src="../lib/d3-queue.v3.min.js"></script>
+
+
+<script>
+
+// Define the SVG and its dimensions
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+
+// Add path to create geo map
+var path = d3.geo.path();
+
+
+// Set the threshold values for the legend and fill
+var thresh = [0,10,20,30,40,50,60,70,80,90]
+// Set the color scale for the map
+var color = d3.scale.threshold()
+    .domain(thresh)
+    .range(['rgb(252,251,253)','rgb(239,237,245)','rgb(218,218,235)','rgb(188,189,220)','rgb(158,154,200)',
+      'rgb(128,125,186)','rgb(106,81,163)','rgb(84,39,143)','rgb(47, 13, 76)','#000000']);
+
+
+
+// Initializing D3.queue and loading our data files.
+d3.queue()
+    .defer(d3.json, "./us.json")
+    .defer(d3.csv, "../Q6/education.csv")
+    .defer(d3.csv, "../Q6/education_details.csv")
+    .await(ready);
+
+
+
+
+// Once the data is ready we can now make our map
+function ready(error, us, edu, dets) {
+
+// This function joins our edu and education details table together to form one table
+function join_data(lookup_table, main_table, lookup_key, main_key, select) {
+    var lookup = lookup_table.length,
+        main = main_table.length,
+        lookupIndex = [],
+        output = [];
+    for (var i = 0; i < lookup; i++) { // Looping through all the items in the look up table table
+        var row = lookup_table[i];
+        lookupIndex[row[lookup_key]] = row; // Creating an index for items in the look up table
+    }
+    for (var j = 0; j < main; j++) { // Looping through the items of the main table
+        var y = main_table[j];
+        var x = lookupIndex[y[main_key]]; // Using the id as key we get the corresponding row from the look up table
+        output.push(select(y, x)); // Getting our data
+    }
+    return output;
+};
+
+  if (error) throw error;
+// Joined data by calling the function created above
+  var joined_data = join_data(dets, edu, "id", "id", function(edu, dets) {
+    return {
+        id: edu.id,
+        qualified_professionals: dets.qualified_professionals,
+        high_school: dets.high_school,
+        middle_school_or_lower: dets.middle_school_or_lower,
+        state : edu.State,
+        name : edu.name,
+        percent_educated : +edu.percent_educated
+      };});
+
+
+// Function to return percent educated in county
+  function find_percent_educated(b){
+  for (var i in joined_data) {
+  if (joined_data[i].id == b) {
+    return joined_data[i].percent_educated ;
+  }}};
+// Function to return county
+  function find_county(b){
+  for (var i in joined_data) {
+  if (joined_data[i].id == b) {
+    return joined_data[i].name ;
+  }}};
+// Function to return number of  highschool grads
+    function find_high_school(b){
+  for (var i in joined_data) {
+  if (joined_data[i].id == b) {
+    return joined_data[i].high_school ;
+  }}};
+
+// Function to return number of qualified professionals
+      function find_qual(b){
+  for (var i in joined_data) {
+  if (joined_data[i].id == b) {
+    return joined_data[i].qualified_professionals ;
+  }}};
+
+// Function to return number of middle or lower school graduates
+  function find_middle(b){
+  for (var i in joined_data) {
+  if (joined_data[i].id == b) {
+    return joined_data[i].middle_school_or_lower ;
+  }}};
+
+
+// Intialzing tool tip and functions to call.
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  // Adding offset to prevent flickering
+  .offset([-10, 0])
+  .direction('n')
+  .html(function(d) {
+    return  "County: " +find_county(d.id) +
+            "<br/>Percent educated: " + find_percent_educated(d.id) +"%"+
+            "<br/>Qualified Professionals: " +find_qual(d.id)+
+            "<br/>High School Graduates: " +find_high_school(d.id)+
+            "<br/>Middle School or Lower: " +find_middle(d.id)
+
+
+ });
+      // Calling tooltip
+      svg.call(tip);
+
+      // Creating teh map svg with counties
+      svg.append("g")
+      .attr("class", "counties")
+      .selectAll("path")
+      .data(topojson.feature(us, us.objects.counties).features)
+      .enter().append("path")
+      .attr("fill", function(d) { return color(find_percent_educated(d.id));})
+      .attr("d", path)
+      // Adding mouseover tool tip functionality
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+
+
+    //Adding legend for our Choropleth
+      var legend = svg.selectAll(".legend")
+                      .data(thresh)
+                      .enter().append("g")
+                      .attr("class", "legend");
+
+
+
+
+
+      //Defining the legend dimensions
+      var legend_width = 20, legend_heigth = 20;
+
+      legend.append("rect")
+      .attr("x", 870)
+      .attr("y", function(d, i){ return height - (i*legend_heigth) - 10*legend_heigth;})
+      .attr("width", legend_width)
+      .attr("height", legend_heigth)
+      .style("fill", function(d, i) { return color(d); })
+      .style("opacity", 0.8);
+
+      // Adding the legend text
+      legend.append("text")
+      .attr("x", 895)
+      .attr("y", function(d, i){ return height - (i*legend_heigth) - 10*legend_heigth +15;})
+      .text(function(d) { return Math.round(d) + "%"; })
+
+
+
+
+
+
+}
+
+
+
+
+
+
+</script>

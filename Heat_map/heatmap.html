@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+<meta charset="utf-8">
+<script src="../lib/d3.v3.min.js"></script>
+    </head>
+    <style type="text/css">
+
+            body {
+              font-family: sans-serif;
+              font-size: 13px;
+              font-weight: bold;
+                }
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: white;
+                shape-rendering: crispEdges;
+            }
+
+            .axis text {
+                font-family: sans-serif;
+                font-size: 11px;
+            }
+
+            .legend rect {
+                  fill:white;
+                  stroke:black;
+                  opacity:0.8;}
+
+            .legend text {
+                font-family: sans-serif;
+                font-size: 11px
+            }
+
+
+
+    </style>
+    <body>
+    <label for="select">Houses</label>
+        <script type="text/javascript">
+
+            // Heat Map Variable Definitions
+            var box_size = 40,
+            total_cell_size = box_size +3,
+            margin = {top: 30, right: 20, bottom: 20, left: 110};
+
+            // Defining the margins
+            var width = 850 - margin.right - margin.left,
+            height = 600 - margin.top - margin.bottom;
+
+            // Defining the variables for the legend
+            var legend_height = Math.floor(width / 24),
+            element_width = legend_height*1.5;
+
+            // Initializing empty arrays to store data
+            var dataset = [];
+            var x_axis_elems = [];
+            var y_axis_elems = [];
+            var houses = [];
+
+            d3.csv("heatmap.csv", function(error, data) {
+            //Data needs to be reshaped for heatmap
+            // First loop looks at each row within the csv through .forEach
+            data.forEach(function(d) {
+            // Consider each element within the row
+            for (book_name in d) {
+
+                // Exclude House and Spell type as columns
+                if (book_name != 'House' && book_name != 'SpellType'){
+                    house = d.House
+                    spells =+ d[book_name]
+                    spell_type = d.SpellType
+                    y_axis_elems.push(book_name)
+                    x_axis_elems.push(spell_type)
+                    dataset.push([book_name, house, spells, spell_type])}
+                    houses.push(house)
+
+            }})
+
+
+
+            // Removing duplicates, blanks and undefined
+            x_axis_elems =  x_axis_elems.filter(function(spell_type, presence) {
+                            if (spell_type != "")
+                    return x_axis_elems.indexOf(spell_type) == presence;
+                    });
+
+            // Sorting the data
+            x_axis_elems = x_axis_elems.sort(function(x, y){
+                return d3.ascending(x, y);});
+
+
+            // Slicing to remove repetitition and get the 8 books
+            y_axis_elems = y_axis_elems.slice(0,8);
+
+
+
+            // Removing duplicates, blanks and undefined from the list of houses
+            houses =  houses.filter(function(house, presence) { if (house != undefined && house != "")
+                               return houses.indexOf(house) == presence;
+                                });
+
+
+            // Create the option button to pick a house
+            var select = d3.select('body')
+                .append('select')
+                .attr('class','select')
+                .on('change',onchange);
+
+
+            /* Add data to the select button and manually call it once for default
+             as Gryffindor */
+            var options = select
+                .selectAll('option')
+                .data(houses).enter()
+                .append('option')
+                .text(function (d) { return d; })
+                .on('change', function() {
+                    onchange(d3.select('select').property('value'))
+                    })
+                    onchange("Gryffindor");
+
+
+            //Call the function which changes the heatmap when a new house is selected
+            function onchange(house) {
+            d3.select('svg').remove()
+            chosen_house = d3.select('select').property('value')
+            d3.select('body')
+                .append('p')
+
+
+            // Filter the dataset according to the chosen house.
+            heatmap_data = dataset.filter(function(d){return d[1] == chosen_house;});
+
+
+
+
+
+
+            // The scale for the XAxis
+            var xScale = d3.scale.ordinal()
+                .domain(x_axis_elems)
+                .rangeBands([0, x_axis_elems.length * box_size]);
+
+            // Defining the X Axis
+            var xAxis = d3.svg.axis()
+                .scale(xScale)
+                .outerTickSize(0)
+                .innerTickSize(0)
+                .orient("bottom");
+
+            // Scale for the yAxis
+            var yScale = d3.scale.ordinal()
+                .domain(y_axis_elems)
+                .rangeBands([0, y_axis_elems.length * box_size]);
+
+            // Defining the Y Axis
+            var yAxis = d3.svg.axis()
+                .scale(yScale)
+                .outerTickSize(0)
+                .innerTickSize(0)
+                .orient("left");
+
+            // Colors for the Heat Map - 9 color scheme of same hue
+            var colors = ['rgb(247,244,249)','rgb(231,225,239)','rgb(212,185,218)',
+                    'rgb(201,148,199)','rgb(223,101,176)','rgb(231,41,138)',
+                    'rgb(206,18,86)','rgb(152,0,67)','rgb(103,0,31)']
+
+            // Defining the color scale
+            var color_scale = d3.scale.quantile()
+                .domain([d3.min(heatmap_data, function(d) { return d[2];}),
+                    d3.max(heatmap_data, function(d) { return d[2];})])
+                .range(colors);
+
+
+
+
+            //Create SVG element
+            var svg = d3.select('body')
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + (margin.left) + "," + (margin.top) + ")");
+
+
+            // Append the yAxis
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .selectAll('text')
+                .attr('font-weight', 'normal');
+
+            // Add the X Axis and rotate the text
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform","translate(0,"+(y_axis_elems.length * box_size)+")")
+                .call(xAxis)
+                .selectAll('text')
+                .attr('font-weight', 'normal')
+                .style("text-anchor", "end")
+                .attr("dx", "-1em")
+                .attr("dy", ".2em")
+                .attr("transform", function (d) {
+                    return "rotate(-90)";
+                });
+
+
+
+
+
+
+
+            // Add the rectangles of the Heatmap
+            var cells = svg.selectAll('rect')
+                .data(heatmap_data)
+                .enter().append('g').append('rect')
+                .attr('class', 'cell')
+                .attr('width', total_cell_size)
+                .attr('height', total_cell_size)
+                .attr('y', function(d) { return yScale(d[0]); })
+                .attr('x', function(d) { return xScale(d[3]); })
+                .attr('fill', function(d) { return color_scale(d[2]); });
+
+
+            // Add title to the page
+            svg.append("text")
+                .attr("x", width/4.5 )
+                .attr("y", height - 560)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .text("Visualizing wizarding houses and spells");
+
+            // Add the Y Axis Title
+            svg.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (-25) +","+(5)+")")
+                .text("Books");
+
+
+            // Add the X Axis Title
+            svg.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ ((width/2 - margin.right +10)) +","+(height/1.7)+")")
+                .text("Spells");
+
+            // Add legend title
+            svg.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (width/19) +","+(height-(margin.bottom+margin.right+60))+")")
+                .text("No. of Spells");
+
+
+
+            // Add legend to the heat map.
+            var legend = svg.selectAll(".legend")
+                .data([0].concat(color_scale.quantiles()), function(d) { return d; });
+
+
+            legend.enter().append("g")
+                .attr("class", "legend");
+
+
+            // Add colored rectangles to the legend
+            legend.append("rect")
+                .attr("x", function(d, i) { return (element_width) * i; })
+                .attr("y", height -95)
+                .attr("width", element_width)
+                .attr("height", legend_height / 1.5)
+                .style("fill", function(d, i) { return colors[i]; });
+
+            // Add Dynamic text to the legend which changes depending on house.
+            legend.append("text")
+                .attr("class", "mono")
+                .text(function(d) { return "≥ " + Math.round(d); })
+                .attr("x", function(d, i) { return element_width * i; })
+                .attr("y", height + legend_height -95);
+
+
+
+
+}});
+
+        </script>
+    </body>
+</html>

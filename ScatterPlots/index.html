@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>alakdawala3</title>
+        <script type="text/javascript" src="d3/d3.v3.min.js"></script>
+    </head>
+    <style type="text/css">
+
+
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+
+            .axis text {
+                font-family: sans-serif;
+                font-size: 11px;
+            }
+
+
+    </style>
+    <body>
+        <script type="text/javascript">
+
+
+            //Width and height
+            var w = 600;
+            var h = 600;
+            var padding = 50;
+
+
+            //Dynamic, random dataset
+            var dataset = [];                   //Initialize empty array
+            var numDataPoints = 60;             //Number of dummy data points to create
+            //var xRange = Math.random() * 100;  //Max range of new x values
+            //var yRange = Math.random() * 100;  //Max range of new y values
+            for (var i = 0; i < numDataPoints; i++) {                   //Loop numDataPoints times
+                var newNumber1 = Math.round(Math.random() * 100);    //New random integer
+                var newNumber2 = Math.round(Math.random() * 100);    //New random integer
+                dataset.push([newNumber1, newNumber2]);                 //Add new number to array
+            }
+
+            //Create scale functions
+            var xScale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset, function(d) { return d[0]; })])
+                                 .range([padding, w - padding * 2]);
+
+            var yScale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset, function(d) { return d[1]; })])
+                                 .range([h - padding, padding + 50]);
+
+            var rScale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset, function(d) { return d[1]; })])
+                                 .range([5, 50]);
+
+            // Calculate the average of the objects in the dataset
+            array_of_x_values = [];
+            for(var i = 0; i < numDataPoints; i++) {array_of_x_values.push(rScale(dataset[i][0]))};
+            mean = d3.mean(array_of_x_values);
+            //Define X axis
+            var xAxis = d3.svg.axis()
+                              .scale(xScale)
+                              .orient("bottom")
+                              .ticks(5);
+
+            //Define Y axis
+            var yAxis = d3.svg.axis()
+                              .scale(yScale)
+                              .orient("left")
+                              .ticks(5);
+
+
+            //Create SVG element
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+
+
+
+
+            //Create shapes
+       svg.selectAll(".point")
+                .data(dataset)
+                .enter()
+                .append("path")
+                .attr("class", "point")
+                .attr("d", d3.svg.symbol()
+                    .size(function (d) {return rScale(d[0]);})
+                    .type(function(d, i){if (i < 30) {return "cross"} else {return "triangle-up"};}))
+                .attr("transform", function (d) {return "translate(" + xScale(d[0]) + "," + yScale(d[1]) + ")";})
+                .style("fill", function(d) {if (rScale(d[0]) > mean) {return "rgb(0,0,255)"} else {return "rgb(0,128,0)"};});
+
+
+
+
+            //Create X axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - padding) + ")")
+                .call(xAxis);
+
+            //Create Y axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding  + ",0)")
+                .call(yAxis);
+
+            // Create Name
+            svg.append("text")
+                .attr("x", w/2 )
+                .attr("y", h - 550)
+                .attr("text-anchor", "middle")
+                .style("font-size", "25px")
+                .text("Ali Mujtaba Lakdawala");
+
+
+        </script>
+    </body>
+</html>

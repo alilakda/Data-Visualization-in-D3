@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+<meta charset="utf-8">
+<script src="../lib/d3.v3.min.js"></script>
+    </head>
+    <style type="text/css">
+
+
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+
+            .axis text {
+                font-family: sans-serif;
+                font-size: 11px;
+            }
+
+            .legend rect {
+                  fill:white;
+                  stroke:black;
+                  opacity:0.8;}
+
+
+    </style>
+    <body>
+        <script type="text/javascript">
+
+//First Graph
+            //Width and height
+            var w = 600;
+            var h = 600;
+            var padding = 70;
+
+            // Extract Data from CSV
+            var dataset = [];                   //Initialize empty array
+            d3.csv("movies.csv", function(error, data) {
+            data.forEach(function(d) {
+            d.imdbRating = +d.imdbRating;
+            d.WinsNoms = +d.WinsNoms;
+            d.IsGoodRating = +d.IsGoodRating;
+            dataset.push([d.imdbRating, d.WinsNoms, d.IsGoodRating]);
+            })
+
+            // Console check to ensure data loads correctly.
+            console.log(dataset);
+
+
+
+            //Create the X scale function
+            var x1Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset, function(d) { return d[0]; })])
+                                 .range([padding, w - padding * 2]);
+
+            // Create the Y scale function
+            var y1Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset, function(d) { return d[1]; })])
+                                 .range([h - padding, padding + 50]);
+
+            //Defines the X axis
+            var xAxis = d3.svg.axis()
+                              .scale(x1Scale)
+                              .orient("bottom")
+                              .ticks(5);
+
+            //Defines the Y axis
+            var yAxis = d3.svg.axis()
+                              .scale(y1Scale)
+                              .orient("left")
+                              .ticks(5);
+
+
+            //Create SVG element
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+
+
+
+
+            //Create circles
+            svg.selectAll("circle")
+                .data(dataset.filter(function(d){return d[2] == 0;}))
+                .enter()
+                .append("circle")
+                .attr("r", 4)
+                .attr("cx", function(d) {
+                return x1Scale(d[0]);
+                })
+                .attr("cy", function(d) {
+                return y1Scale(d[1]);
+                })
+                .style("fill", "white")
+                .style("stroke", "red");
+
+            //Create crosses
+            svg.selectAll(".point")
+                  .data(dataset.filter(function(d){return d[2] == 1;}))
+                  .enter().append("path")
+                  .attr("class", "point")
+                  .attr("d", d3.svg.symbol().type("cross"))
+                  .attr("transform", function (d) {return "translate(" + x1Scale(d[0]) + "," + y1Scale(d[1]) + ")";})
+                  .style("fill", "white")
+                  .style("stroke", "blue");
+
+
+
+
+            //Create X axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - padding) + ")")
+                .call(xAxis);
+
+            //Create Y axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding  + ",0)")
+                .call(yAxis);
+
+            // Create Name
+            svg.append("text")
+                .attr("x", w/2 )
+                .attr("y", h - 550)
+                .attr("text-anchor", "middle")
+                .style("font-size", "15px")
+                .text("Wins + Nomination vs. IMDb rating");
+
+            // Add Y Axis Label
+            svg.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (padding/2) +","+(h/2)+")rotate(-90)")
+                .text("Wins + Nominations");
+
+            // Add Add X Axis Label
+            svg.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (w/2) +","+(h-(padding/3))+")")
+                .text("IMDb Rating");
+
+
+
+            //Defining the variables of our legend
+            var values = [0, 1];
+            var legspacing = 15;
+            var types_of_rating = ["Bad Rating", "Good Rating"];
+
+            // Making the legend
+            var legend = svg.selectAll(".legend")
+                .data(values)
+                .enter()
+                .append("g")
+                .attr("transform", "translate("+ (w-padding*2) +","+(h-(padding))+")") ;
+
+
+            // Adding a circle to the legend
+            legend.append("circle")
+                .attr("r", 5)
+                .attr("fill", "white")
+                .style("stroke", "red")
+                .attr("cy", function (d, i) {
+                    return 1 * legspacing - 495;
+                })
+                .attr("cx", 45);
+
+            // Adding a cross to the legend
+            legend.append("path")
+                .attr("d", d3.svg.symbol().type("cross"))
+                .attr("fill", "white")
+                .style("stroke", "blue")
+                .attr("transform", "translate("+ 45 +","+ -465+")")
+
+            // Adding the legend text
+            legend.append("text")
+                .attr("class", "label")
+                .attr("y", function (d, i) {
+                    return i * legspacing -475;
+                })
+                .attr("x", 55)
+                .attr("text-anchor", "start")
+                .text(function (d, i) {
+                    return types_of_rating[i];
+                });
+
+
+
+
+
+
+
+});
+
+
+//Second Graph
+
+
+
+
+            var dataset2 = [];                   //Initialize empty array
+            // Load data from CSV
+            d3.csv("movies.csv", function(error, data) {
+            data.forEach(function(d) {
+            d.imdbRating = +d.imdbRating;
+            d.WinsNoms = +d.WinsNoms;
+            d.Budget = +d.Budget;
+            dataset2.push([d.imdbRating, d.Budget, d.IsGoodRating]);
+            })
+            // Check to see if data has been loaded correctly.
+            console.log(dataset);
+
+
+
+            //Create X scale function
+            var x2Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset2, function(d) { return d[0]; })])
+                                 .range([padding, w - padding * 2]);
+            // Create Y Scale function
+            var y2Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset2, function(d) { return d[1]; })])
+                                 .range([h - padding, padding + 50]);
+
+            // Define the X Axis scale
+            var x2Axis = d3.svg.axis()
+                              .scale(x2Scale)
+                              .orient("bottom")
+                              .ticks(5);
+
+            //Define the Y axis scale
+            var y2Axis = d3.svg.axis()
+                              .scale(y2Scale)
+                              .orient("left")
+                              .ticks(5);
+
+
+            //Create SVG element
+            var svg2 = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+
+
+
+
+            //Create Circles
+            svg2.selectAll("circle")
+                .data(dataset2.filter(function(d){return d[2] == 0;}))
+                .enter()
+                .append("circle")
+                .attr("r", 4)
+                .attr("cx", function(d) {
+                return x2Scale(d[0]);
+                })
+                .attr("cy", function(d) {
+                return y2Scale(d[1]);
+                })
+                .style("fill", "white")
+                .style("stroke", "red");
+
+
+            // Create crosses
+            svg2.selectAll(".point")
+                  .data(dataset2.filter(function(d){return d[2] == 1;}))
+                  .enter().append("path")
+                  .attr("class", "point")
+                  .attr("d", d3.svg.symbol().type("cross"))
+                  .attr("transform", function (d) {return "translate(" + x2Scale(d[0]) + "," + y2Scale(d[1]) + ")";})
+                  .style("fill", "white")
+                  .style("stroke", "blue");
+
+
+
+
+            //Create X axis
+            svg2.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - padding) + ")")
+                .call(x2Axis);
+
+            //Create Y axis
+            svg2.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding  + ",0)")
+                .call(y2Axis);
+
+            // Create graph title
+            svg2.append("text")
+                .attr("x", w/2 )
+                .attr("y", h - 550)
+                .attr("text-anchor", "middle")
+                .style("font-size", "15px")
+                .text("Budget vs. IMDb rating");
+
+            // Add the Y Axis title
+            svg2.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (padding/2) +","+((h-65)/2)+")rotate(-90)")
+                .text("Budget");
+
+
+            // Add the X Axis title
+            svg2.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (w/2) +","+(h-(padding/3))+")")
+                .text("IMDb Rating");
+
+
+            // Define the variables needed in the legend.
+            var values = [0, 1];
+            var legspacing = 15;
+            var types_of_rating = ["Bad Rating", "Good Rating"];
+
+            //Define the legend.
+            var legend2 = svg2.selectAll(".legend")
+                .data(values)
+                .enter()
+                .append("g")
+                .attr("transform", "translate("+ (w-padding*2) +","+(h-(padding))+")") ;
+
+
+            // Add a circle to the legend
+            legend2.append("circle")
+                .attr("r", 5)
+                .attr("fill", "white")
+                .style("stroke", "red")
+                .attr("cy", function (d, i) {
+                    return 1 * legspacing - 495;
+                })
+                .attr("cx", 45);
+
+
+            // Add a cross to the legend
+            legend2.append("path")
+                .attr("d", d3.svg.symbol().type("cross"))
+                .attr("fill", "white")
+                .style("stroke", "blue")
+                .attr("transform", "translate("+ 45 +","+ -465+")")
+
+            // Add text to the legend.
+            legend2.append("text")
+                .attr("class", "label")
+                .attr("y", function (d, i) {
+                    return i * legspacing -475;
+                })
+                .attr("x", 55)
+                .attr("text-anchor", "start")
+                .text(function (d, i) {
+                    return types_of_rating[i];
+                });
+
+
+});
+
+
+//Third Graph
+            //Width and height
+            var w = 600;
+            var h = 600;
+            var padding = 70;
+
+
+            var dataset3 = [];                   //Initialize empty array
+            // Load the data
+            d3.csv("movies.csv", function(error, data) {
+            data.forEach(function(d) {
+            d.imdbRating = +d.imdbRating;
+            d.WinsNoms = +d.WinsNoms;
+            d.IsGoodRating = +d.IsGoodRating;
+            d.imdbVotes =+ d.imdbVotes;
+            dataset3.push([d.imdbRating, d.WinsNoms, d.IsGoodRating, d.imdbVotes]);
+            })
+            // Check if the data is correct
+            console.log(dataset3);
+
+
+
+            //Create X scale functions
+            var x3Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset3, function(d) { return d[0]; })])
+                                 .range([padding, w - padding * 2]);
+            //Create Y scale function
+            var y3Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset3, function(d) { return d[3]; })])
+                                 .range([h - padding, padding + 50]);
+            //Make a scale for the sizing the points
+            var rScale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset3, function(d) { return d[1]; })])
+                                 .range([5, 50]);
+
+            // Define the X Axis
+            var xAxis = d3.svg.axis()
+                              .scale(x3Scale)
+                              .orient("bottom")
+                              .ticks(5);
+
+            //Define Y axis
+            var yAxis = d3.svg.axis()
+                              .scale(y3Scale)
+                              .orient("left")
+                              .ticks(5);
+
+
+            //Create SVG element
+            var svg3 = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+
+
+
+
+            //Create Circles
+            svg3.selectAll("circle")
+                        .data(dataset3.filter(function(d){return d[2] == 0;}))
+                        .enter()
+                        .append("circle")
+                        .attr("r", function (d) {return (rScale(d[1])/4);})
+                        .attr("cx", function(d) {
+                        return x3Scale(d[0]);
+                        })
+                        .attr("cy", function(d) {
+                        return y3Scale(d[3]);
+                        })
+                        .style("fill", "white")
+                        .style("stroke", "red");
+
+
+
+            // Create crosses
+            svg3.selectAll(".point")
+                      .data(dataset3.filter(function(d){return d[2] == 1;}))
+                      .enter().append("path")
+                      .attr("class", "point")
+                      .attr("d", d3.svg.symbol().type("cross").size(function (d) {return rScale(d[1]);}))
+                      .attr("transform", function (d) {return "translate(" + x3Scale(d[0]) + "," + y3Scale(d[3]) + ")";})
+                      .style("fill", "white")
+                      .style("stroke", "blue");
+
+
+
+
+            //Create X axis
+            svg3.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - padding) + ")")
+                .call(xAxis);
+
+            //Create Y axis
+            svg3.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding  + ",0)")
+                .call(yAxis);
+
+            // Create Graph Title
+            svg3.append("text")
+                .attr("x", w/2 )
+                .attr("y", h - 550)
+                .attr("text-anchor", "middle")
+                .style("font-size", "15px")
+                .text("Votes vs. IMDb Rating sized by Wins + Nominations");
+
+            // Add the Y Axis Title
+            svg3.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ ((padding-33)/2) +","+(h/2)+")rotate(-90)")
+                .text("Votes");
+
+
+            // Add the X Axis Title
+            svg3.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (w/2) +","+(h-(padding/3))+")")
+                .text("IMDb Rating");
+
+
+            // Define the variables for the legend
+            var values = [0, 1];
+            var legspacing = 15;
+            var types_of_rating = ["Bad Rating", "Good Rating"];
+
+            // Make the legend
+            var legend = svg3.selectAll(".legend")
+                .data(values)
+                .enter()
+                .append("g")
+                .attr("transform", "translate("+ (w-padding*2) +","+(h-(padding))+")") ;
+
+
+            // Add a circle to the legend
+            legend.append("circle")
+                .attr("r", 5)
+                .attr("fill", "white")
+                .style("stroke", "red")
+                .attr("cy", function (d, i) {
+                    return 1 * legspacing - 495;
+                })
+                .attr("cx", 45);
+
+            // Add a cross to the legend
+            legend.append("path")
+                .attr("d", d3.svg.symbol().type("cross"))
+                .attr("fill", "white")
+                .style("stroke", "blue")
+                .attr("transform", "translate("+ 45 +","+ -465+")")
+
+            // Add text to the legend
+            legend.append("text")
+                .attr("class", "label")
+                .attr("y", function (d, i) {
+                    return i * legspacing -475;
+                })
+                .attr("x", 55)
+                .attr("text-anchor", "start")
+                .text(function (d, i) {
+                    return types_of_rating[i];
+                });
+
+
+
+
+});
+
+//Fourth Graph
+            //Width and height
+            var w = 600;
+            var h = 600;
+            var padding = 70;
+
+
+            var dataset4 = [];                   //Initialize empty array
+            // Load the data from CSV
+            d3.csv("movies.csv", function(error, data) {
+            data.forEach(function(d) {
+            d.imdbRating = +d.imdbRating;
+            d.WinsNoms = +d.WinsNoms;
+            d.IsGoodRating = +d.IsGoodRating;
+            dataset4.push([d.imdbRating, d.WinsNoms, d.IsGoodRating]);
+            })
+
+
+            // Check if data has been loaded correctly
+            console.log(dataset4);
+
+
+
+            //Create X scale function
+            var x4Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset4, function(d) { return d[0]; })])
+                                 .range([padding, w - padding * 2]);
+            // Create the Y Scale function
+            var y4Scale = d3.scale.sqrt()
+                                 .domain([0, d3.max(dataset4, function(d) { return d[1]; })])
+                                 .range([h - padding, padding + 50]);
+
+            // Define the Y Axis
+            var x4Axis = d3.svg.axis()
+                              .scale(x4Scale)
+                              .orient("bottom")
+                              .ticks(5);
+
+            //Define Y axis
+            var y4Axis = d3.svg.axis()
+                              .scale(y4Scale)
+                              .orient("left")
+                              .ticks(5);
+
+
+            //Create SVG element
+            var svg4 = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+
+
+
+
+            //Create Circles
+            svg4.selectAll("circle")
+                        .data(dataset.filter(function(d){return d[2] == 0;}))
+                        .enter()
+                        .append("circle")
+                        .attr("r", 4)
+                        .attr("cx", function(d) {
+                        return x4Scale(d[0]);
+                        })
+                        .attr("cy", function(d) {
+                        return y4Scale(d[1]);
+                        })
+                        .style("fill", "white")
+                        .style("stroke", "red");
+
+
+            // Create crosses
+            svg4.selectAll(".point")
+                      .data(dataset.filter(function(d){return d[2] == 1;}))
+                      .enter().append("path")
+                      .attr("class", "point")
+                      .attr("d", d3.svg.symbol().type("cross"))
+                      .attr("transform", function (d) {return "translate(" + x4Scale(d[0]) + "," + y4Scale(d[1]) + ")";})
+                      .style("fill", "white")
+                      .style("stroke", "blue");
+
+
+
+
+            //Create X axis
+            svg4.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - padding) + ")")
+                .call(x4Axis);
+
+            //Create Y axis
+            svg4.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding  + ",0)")
+                .call(y4Axis);
+
+            // Create Name
+            svg4.append("text")
+                .attr("x", w/2 )
+                .attr("y", h - 550)
+                .attr("text-anchor", "middle")
+                .style("font-size", "15px")
+                .text("Wins + Nomination (square-root-scaled) vs. IMDb rating");
+
+            // Add Y Axis Label
+            svg4.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (padding/2) +","+(h/2)+")rotate(-90)")
+                .text("Wins + Nominations");
+
+
+            // Add X Axis Label
+            svg4.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (w/2) +","+(h-(padding/3))+")")
+                .text("IMDb Rating");
+
+
+            // Define the variables for the legend.
+            var values = [0, 1];
+            var legspacing = 15;
+            var types_of_rating = ["Bad Rating", "Good Rating"];
+
+            // Make the legend
+            var legend4 = svg4.selectAll(".legend")
+                .data(values)
+                .enter()
+                .append("g")
+                .attr("transform", "translate("+ (w-padding*2) +","+(h-(padding))+")") ;
+
+
+            // Add a circle to the legend
+            legend4.append("circle")
+                .attr("r", 5)
+                .attr("fill", "white")
+                .style("stroke", "red")
+                .attr("cy", function (d, i) {
+                    return 1 * legspacing - 495;
+                })
+                .attr("cx", 45);
+
+            // Add a cross to the legend
+            legend4.append("path")
+                .attr("d", d3.svg.symbol().type("cross"))
+                .attr("fill", "white")
+                .style("stroke", "blue")
+                .attr("transform", "translate("+ 45 +","+ -465+")")
+
+
+            // Add text to the legend
+            legend4.append("text")
+                .attr("class", "label")
+                .attr("y", function (d, i) {
+                    return i * legspacing -475;
+                })
+                .attr("x", 55)
+                .attr("text-anchor", "start")
+                .text(function (d, i) {
+                    return types_of_rating[i];
+                });
+
+
+
+});
+
+
+//Fifth Graph
+            //Width and height
+            var w = 600;
+            var h = 600;
+            var padding = 70;
+
+
+            var dataset5 = [];                   //Initialize empty array
+            // Load the dataset
+            d3.csv("movies.csv", function(error, data) {
+            data.forEach(function(d) {
+            d.imdbRating = +d.imdbRating;
+            if (d.WinsNoms == '0') {d.WinsNoms = +1} else
+            {d.WinsNoms = +d.WinsNoms};
+            d.IsGoodRating = +d.IsGoodRating;;
+            dataset5.push([d.imdbRating, d.WinsNoms, d.IsGoodRating]);
+            })
+            // Check to see if the required data was read correctly
+            console.log(dataset5);
+
+
+
+            //Create X scale functions
+            var x5Scale = d3.scale.linear()
+                                 .domain([0, d3.max(dataset5, function(d) { return d[0]; })])
+                                 .range([padding, w - padding * 2]);
+
+
+            // Create the Y scale function
+            var y5Scale = d3.scale.log().clamp(true)
+                                 .domain([d3.min(dataset5, function(d) { return d[1]; }), d3.max(dataset5, function(d) { return d[1]; })])
+                                 .range([h - padding, padding + 50]);
+
+            // Define the X Axis
+            var x5Axis = d3.svg.axis()
+                              .scale(x5Scale)
+                              .orient("bottom")
+                              .ticks(5);
+
+            //Define Y axis
+            var y5Axis = d3.svg.axis()
+                              .scale(y5Scale)
+                              .orient("left")
+                              .ticks(5);
+
+
+            //Create SVG element
+            var svg5 = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+
+
+
+
+            //Create Circles
+            svg5.selectAll("circle")
+                        .data(dataset.filter(function(d){return d[2] == 0;}))
+                        .enter()
+                        .append("circle")
+                        .attr("r", 4)
+                        .attr("cx", function(d) {
+                        return x5Scale(d[0]);
+                        })
+                        .attr("cy", function(d) {
+                        return y5Scale(d[1]);
+                        })
+                        .style("fill", "white")
+                        .style("stroke", "red");
+
+
+        // Create Crosses
+        svg5.selectAll(".point")
+                      .data(dataset.filter(function(d){return d[2] == 1;}))
+                      .enter().append("path")
+                      .attr("class", "point")
+                      .attr("d", d3.svg.symbol().type("cross"))
+                      .attr("transform", function (d) {return "translate(" + x5Scale(d[0]) + "," + y5Scale(d[1]) + ")";})
+                      .style("fill", "white")
+                      .style("stroke", "blue");
+
+
+
+
+            //Create X axis
+            svg5.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - padding) + ")")
+                .call(x5Axis);
+
+            //Create Y axis
+            svg5.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding  + ",0)")
+                .call(y5Axis);
+
+            // Create Graph Title
+            svg5.append("text")
+                .attr("x", w/2 )
+                .attr("y", h - 550)
+                .attr("text-anchor", "middle")
+                .style("font-size", "15px")
+                .text("Wins + Nomination (log-scaled) vs. IMDb rating");
+
+            // Add Y Axis Title
+            svg5.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (padding/2) +","+(h/2)+")rotate(-90)")
+                .text("Wins + Nominations");
+
+
+            // Add X Axis Title
+            svg5.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", "translate("+ (w/2) +","+(h-(padding/3))+")")
+                .text("IMDb Rating");
+
+
+            // Define variable needed in the legend
+            var values = [0, 1];
+            var legspacing = 15;
+            var types_of_rating= ["Bad Rating", "Good Rating"];
+
+            // Make the legend
+            var legend5 = svg5.selectAll(".legend")
+                .data(values)
+                .enter()
+                .append("g")
+                .attr("transform", "translate("+ (w-padding*2) +","+(h-(padding))+")") ;
+
+
+            // Add a circle to the legend
+            legend5.append("circle")
+                .attr("r", 5)
+                .attr("fill", "white")
+                .style("stroke", "red")
+                .attr("cy", function (d, i) {
+                    return 1 * legspacing - 495;
+                })
+                .attr("cx", 45);
+
+
+
+            // Add a cross to the legend
+            legend5.append("path")
+                .attr("d", d3.svg.symbol().type("cross"))
+                .attr("fill", "white")
+                .style("stroke", "blue")
+                .attr("transform", "translate("+ 45 +","+ -465+")")
+
+
+            // Add text to the legend.
+            legend5.append("text")
+                .attr("class", "label")
+                .attr("y", function (d, i) {
+                    return i * legspacing -475;
+                })
+                .attr("x", 55)
+                .attr("text-anchor", "start")
+                .text(function (d, i) {
+                    return types_of_rating[i];
+                });
+
+// End
+
+});
+
+        </script>
+    </body>
+</html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title>Interactive Bar chart</title>
+    <script src="../lib/d3.v3.min.js"></script>
+    <style>
+        body {
+            font-family: "Arial", sans-serif;
+            display :inline;
+            float : left;
+        }
+
+        .bar {
+            fill: #bdbdbd;
+        }
+
+        .bar:hover {
+            fill: red;
+        }
+
+        .axis {
+            font-size: 13px;
+        }
+
+        .label {
+            font-size: 13px;
+        }
+
+        path {
+            stroke: steelblue;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: grey;
+            stroke-width: 1;
+            shape-rendering: crispEdges;
+        }
+
+
+    </style>
+
+</head>
+
+<body>
+
+
+    <script>
+        // Loading the data for the intereactive Visualization
+        var data=[{city: 'San Antonio', population_2012: 1383505,
+                growth: {year_2013:25405, year_2014:26644 , year_2015:28593 ,
+                year_2016:23591 , year_2017:24208}},
+                 {city: 'New York', population_2012: 8383504, growth:
+                 {year_2013:75138 , year_2014:62493 , year_2015:61324 ,
+                    year_2016:32967 , year_2017:7272}},
+                 {city: 'Chicago', population_2012: 2717989, growth:
+                 {year_2013:6493 , year_2014:2051 , year_2015:-1379 ,
+                    year_2016:-4879 , year_2017:-3825}},
+                {city: 'Los Angeles', population_2012: 3859267,
+                growth:{year_2013:32516 , year_2014:30885 ,
+                    year_2015:30791 , year_2016:27657 , year_2017:18643}},
+                 {city: 'Phoenix', population_2012: 1495880, growth:
+                 {year_2013:25302 , year_2014:26547 , year_2015:27310 ,
+                  year_2016:27003 , year_2017:24036}}];
+
+        // Initializing empty array
+        var pop_iteration = [];
+        var sum_data = []
+
+
+        // Creating variable to format bar text later
+        var formatComma = d3.format(",")
+
+        // Calculating population growth and cumulative population
+        for (d = 0; d < 5;  d += 1) {
+                sum_data.push(data[d]['population_2012'] +
+                    data[d]['growth']['year_201' +"3"]+
+                    data[d]['growth']['year_201' +"4"]+
+                    data[d]['growth']['year_201' +"5"]+
+                    data[d]['growth']['year_201' +"6"]+
+                    data[d]['growth']['year_201' +"7"]
+                    )
+
+                data[d].total_population = sum_data[d]
+
+                pop_iteration.push([
+                ((data[d]['growth']['year_2013']/data[d]['population_2012'])*100),
+                ((data[d]['growth']['year_2014']/(data[d]['population_2012']+
+                    data[d]['growth']['year_2013']))*100),
+                ((data[d]['growth']['year_2015']/(data[d]['population_2012']+
+                    data[d]['growth']['year_2013']+data[d]['growth']['year_2014']))*100),
+                ((data[d]['growth']['year_2016']/(data[d]['population_2012']+
+                    data[d]['growth']['year_2013']+data[d]['growth']['year_2014']
+                    +data[d]['growth']['year_2015']))*100),
+                ((data[d]['growth']['year_2017']/(data[d]['population_2012']+
+                    data[d]['growth']['year_2013']+data[d]['growth']['year_2014']+
+                    data[d]['growth']['year_2015']+data[d]['growth']['year_2016']))*100)]);
+
+                data[d].percent_change = [pop_iteration[d][0], pop_iteration[d][1],
+                pop_iteration[d][2], pop_iteration[d][3], pop_iteration[d][4]]
+                data[d].year = ["2013","2014","2015","2016","2017"]
+
+
+
+            };
+
+
+
+
+
+        // Sort bars based on value of total population
+        data = data.sort(function (a, b) {
+            return d3.ascending(a.total_population, b.total_population);
+        });
+
+
+        // Define the margins of the SVG
+        var margin = {
+            top: 15,
+            right: 25,
+            bottom: 15,
+            left: 80
+        };
+
+        // Defining the dimensions
+        var width = 600 - margin.left - margin.right,
+            height = 300 - margin.top - margin.bottom;
+
+
+        // Creating the SVG
+        var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+        // Defining the scale of the x Axis
+        var xscale = d3.scale.linear()
+            .range([0, width])
+            .domain([0, d3.max(data, function (d) {
+                return +d.total_population;
+            })]);
+
+        // Defining the scale of the y axis
+        var yscale = d3.scale.ordinal()
+            .rangeRoundBands([height/1.5, 0], .2)
+            .domain(data.map(function (d) {
+                return d.city;
+            }));
+
+        //Display names on the Y Axis
+        var yAxis = d3.svg.axis()
+            .scale(yscale)
+            .tickSize(0)
+            .orient("left");
+
+
+        // Append the Y Axis
+        var gy = svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+
+        // Create the bar element
+        var bars = svg.selectAll(".bar")
+            .data(data)
+            .enter()
+            .append("g")
+
+        // Add the bars
+        bars.append("rect")
+            .attr("class", "bar")
+            .attr("y", function (d) {
+                return yscale(d.city);
+            })
+            .attr("height", yscale.rangeBand())
+            .attr("x", 0)
+            .attr("width", function (d) {
+                return xscale(+d.total_population);
+            })
+            // Mouseover functionality to show line graph
+            .on("mouseover", function(d) {return on_mouseover(d);})
+            .on("mouseout",  on_mouseout);
+
+
+
+
+        //Add a value of total
+        bars.append("text")
+            .attr("class", "label")
+            //y position of the label is halfway down the bar
+            .attr("y", function (d) {
+                return yscale(d.city) + yscale.rangeBand() / 2 + 4;
+            })
+            .attr("x", 10)
+            .text(function (d) {
+                return (formatComma(d.total_population));
+            });
+
+        //Adding the line graph below with mouse over interactivity over the bars
+        function on_mouseover(d) {
+
+        // Define the margins of the line graph
+        var margin = {top: 20, right: 100, bottom: 60, left: 50},
+                        width = 400 - margin.left - margin.right,
+                        height = 270 - margin.top - margin.bottom;
+
+
+
+
+
+
+
+        //Initialize empty array for line graph data
+        graph_data = []
+        for (counter = 0; counter < 5;  counter += 1) {
+
+        iteration = {'year' : +d.year[counter],'percentage_change' :
+        d.percent_change[counter]}
+        graph_data.push(iteration)
+        };
+
+
+        // Set the range of the X Axis
+        var xscale2 = d3.scale.ordinal().rangePoints([0, width]);
+        var yscale2 = d3.scale.linear().range([height, 0]);
+
+        // Scale the range of the data
+        xscale2.domain(graph_data.map(d => d.year));
+        yscale2.domain([d3.min(graph_data, function(d) { return d.percentage_change; }),
+        d3.max(graph_data, function(d) { return d.percentage_change; })]);
+
+        // Define the x axis
+        var xAxis2 = d3.svg.axis().scale(xscale2)
+            .orient("bottom").ticks(5);
+        // Define the y axis
+        var yAxis2 = d3.svg.axis().scale(yscale2)
+            .orient("left").ticks(5);
+
+        // Define the line
+        var valueline = d3.svg.line()
+            .y(function(d) {
+                return yscale2(d.percentage_change); })
+            .x(function(d) { return xscale2(+d.year); });
+
+        // Adds the svg canvas
+        var svg = d3.select('body')
+                .append("svg")
+                .attr("id", "pop_up")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                      "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+
+        // Add the line path
+        svg.append("path")
+            .attr("class", "line")
+            .attr("d", valueline(graph_data));
+
+        // Add the X Axis
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis2);
+
+        // Add the Y Axis
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis2);
+
+
+
+
+
+        // Add the Y Axis Title
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate("+ (-25) +","+(-5)+")")
+            .text("Pct %");
+
+
+        // Add the X Axis Title
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate("+ ((width -10)) +","+(height +30)+")")
+            .text("Year");
+
+              }
+
+        // Include mouseout functionality to remove the graph when mouse is removed
+          function on_mouseout() {
+                d3.select('#pop_up').remove()
+                ;
+                  }
+
+
+    </script>
+
+</body>
+
+</html>
